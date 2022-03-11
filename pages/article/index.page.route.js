@@ -1,0 +1,1 @@
+export default '/article/:id';

@@ -1,19 +1,44 @@
-import ReactDOM from 'react-dom'
-import React from 'react'
-import { getPage } from 'vite-plugin-ssr/client'
-import { PageShell } from './PageShell'
+import ReactDOM from 'react-dom';
+import { useClientRouter } from 'vite-plugin-ssr/client/router';
+import React from 'react';
+import { PageShell } from './PageShell';
 
-hydrate()
+const RenderClient = () => {
+    const { hydrationPromise } = useClientRouter({
+        render(pageContext) {
+            const { Page, pageProps } = pageContext;
 
-async function hydrate() {
-  // We do Server Routing, but we can also do Client Routing by using `useClientRouter()`
-  // instead of `getPage()`, see https://vite-plugin-ssr.com/useClientRouter
-  const pageContext = await getPage()
-  const { Page, pageProps } = pageContext
-  ReactDOM.hydrate(
-    <PageShell pageContext={pageContext}>
-      <Page {...pageProps} />
-    </PageShell>,
-    document.getElementById('page-view'),
-  )
-}
+            const page = (
+                <PageShell pageContext={pageContext}>
+                    <Page {...pageProps} />
+                </PageShell>
+            );
+
+            const container = document.getElementById('page-view');
+
+            if (pageContext.isHydration) {
+                ReactDOM.hydrate(page, container);
+            } else {
+                ReactDOM.render(page, container);
+            }
+        },
+        ensureHydration: true,
+        onTransitionStart,
+        onTransitionEnd,
+    });
+
+    hydrationPromise.then(() => {
+        console.log('Hydration finished; page is now interactive.');
+    });
+
+    function onTransitionStart() {
+        console.log('Page transition start');
+        // document.querySelector('#page-content').classList.add('page-transition');
+    }
+    function onTransitionEnd() {
+        console.log('Page transition end');
+        // document.querySelector('#page-content').classList.remove('page-transition');
+    }
+};
+
+RenderClient();
